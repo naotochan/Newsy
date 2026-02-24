@@ -3,8 +3,11 @@
 import feedparser
 import trafilatura
 import yaml
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from pathlib import Path
 from typing import Optional
+
+SEEN_URLS_PATH = Path(__file__).parent.parent / "output" / "seen_urls.txt"
 
 
 @dataclass
@@ -46,13 +49,26 @@ def fetch_content(url: str, max_chars: int = 2000) -> Optional[str]:
     return None
 
 
+def _load_seen_urls() -> set[str]:
+    if SEEN_URLS_PATH.exists():
+        return set(SEEN_URLS_PATH.read_text(encoding="utf-8").splitlines())
+    return set()
+
+
+def _save_seen_urls(seen: set[str]) -> None:
+    SEEN_URLS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    SEEN_URLS_PATH.write_text("\n".join(sorted(seen)) + "\n", encoding="utf-8")
+
+
 def fetch_all_news(config_path: str = "config/settings.yaml") -> list[Article]:
     config = _load_config(config_path)
     feeds = config.get("feeds", [])
     max_per_feed = config.get("max_articles_per_feed", 3)
     max_total = config.get("max_articles_total", 10)
 
+    seen_urls = _load_seen_urls()
     all_articles: list[Article] = []
+    skipped = 0
 
     for feed_info in feeds:
         if len(all_articles) >= max_total:
@@ -62,10 +78,18 @@ def fetch_all_news(config_path: str = "config/settings.yaml") -> list[Article]:
             for article in articles:
                 if len(all_articles) >= max_total:
                     break
+                if article.url in seen_urls:
+                    skipped += 1
+                    continue
                 article.content = fetch_content(article.url)
                 all_articles.append(article)
+                seen_urls.add(article.url)
                 print(f"  取得: {article.title[:60]}...")
         except Exception as e:
             print(f"  [警告] {feed_info['name']} の取得に失敗: {e}")
 
+    if skipped:
+        print(f"  （既出 {skipped} 件スキップ）")
+
+    _save_seen_urls(seen_urls)
     return all_articles
