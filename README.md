@@ -2,6 +2,10 @@
 
 AI・テクノロジーニュースを毎朝自動収集し、会話形式のラジオ番組として音声ファイルを生成する Python CLI。
 
+私が不定期で収集している内容は下記リンクに公開してあります．
+
+https://naotochan.github.io/Newsy/
+
 ## 仕組み
 
 1. **RSS 取得** — 国内外 10 フィードから最新記事を収集
@@ -32,6 +36,8 @@ cp config/.env.example config/.env
 - **VOICEVOX** — 音声合成エンジン（ローカル起動）
 - **LM Studio** または **Anthropic API** — LLM（`config/settings.yaml` で切り替え）
 
+※お好きな 音声エンジン，AI が使えます
+
 ## 使い方
 
 ```bash
@@ -49,21 +55,6 @@ python main.py
 | `README.md` | EP 概要 + 記事一覧 |
 
 同時に `docs/` に GitHub Pages 用の静的サイトも生成されます。
-
-## スマホから聴く
-
-### ローカル（Tailscale）
-
-```bash
-python server.py
-# → http://<tailscale-ip>:8080
-```
-
-### GitHub Pages
-
-`docs/` を push すれば公開されます：
-
-https://naotochan.github.io/Newsy/
 
 ## 設定
 
