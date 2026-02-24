@@ -43,14 +43,15 @@ def _save_readme(
     summaries: dict[int, str] | None = None,
 ) -> None:
     dt = datetime.strptime(date_str, "%Y%m%d_%H%M")
+    total_articles = sum(len(b) for b in batches)
     lines = [
         f"# Newsy — {dt.strftime('%Y年%m月%d日 %H:%M')}",
-        f"\n全 {len(batches)} エピソード / {sum(len(b) for b in batches)} 記事\n",
+        f"\n{total_articles} 記事 · `newsy.mp3`\n",
     ]
-    for ep, batch in enumerate(batches, 1):
-        lines.append(f"## EP{ep} — `newsy_ep{ep}.mp3`")
-        if summaries and ep in summaries:
-            lines.append(f"\n> {summaries[ep]}\n")
+    for part, batch in enumerate(batches, 1):
+        lines.append(f"## パート{part}")
+        if summaries and part in summaries:
+            lines.append(f"\n> {summaries[part]}\n")
         for a in batch:
             lines.append(f"- [{a.title}]({a.url})  _{a.source}_")
         lines.append("")
@@ -58,44 +59,36 @@ def _save_readme(
         f.write("\n".join(lines))
 
 
-def _run_episode(
+def _generate_script_batch(
     articles: list[Article],
-    ep: int,
-    total_eps: int,
+    part: int,
+    total_parts: int,
     date_str: str,
     output_dir: str,
     config_path: str,
-) -> tuple[Optional[str], str]:
-    """エピソードを処理し (mp3_path, summary) を返す"""
-    print(f"\n--- EP{ep}/{total_eps} ({len(articles)} 記事) ---")
+) -> tuple[list[dict], str]:
+    """バッチの脚本を生成し (parsed_lines, summary) を返す"""
+    print(f"\n--- パート{part}/{total_parts} ({len(articles)} 記事) ---")
 
     # 脚本生成
-    script_text = generate_script(articles, config_path, ep=ep, total_eps=total_eps)
+    script_text = generate_script(articles, config_path, ep=part, total_eps=total_parts)
     lines = parse_script(script_text, config_path)
     summary = _extract_summary(script_text)
 
-    base = f"ep{ep}" if total_eps > 1 else "ep1"
-
-    script_path = os.path.join(output_dir, f"script_{base}.txt")
+    script_path = os.path.join(output_dir, f"script_part{part}.txt")
     with open(script_path, "w", encoding="utf-8") as f:
         f.write(script_text)
 
-    sources_path = os.path.join(output_dir, f"sources_{base}.md")
-    _save_sources(articles, sources_path, date_str, ep)
+    sources_path = os.path.join(output_dir, f"sources_part{part}.md")
+    _save_sources(articles, sources_path, date_str, part)
 
     print(f"  脚本 {len(lines)} 行 → {script_path}")
     print(f"  ソース → {sources_path}")
 
     if not lines:
         print("  [警告] 脚本のパースに失敗しました。スキップします。")
-        return None, summary
 
-    # 音声生成
-    mp3_path = os.path.join(output_dir, f"newsy_{base}.mp3")
-    create_audio(lines, config_path, output_path=mp3_path)
-    print(f"  音声 → {mp3_path}")
-
-    return mp3_path, summary
+    return lines, summary
 
 
 def run(config_path: str = "config/settings.yaml", output_dir: str = "output") -> list[str]:
@@ -131,17 +124,28 @@ def run(config_path: str = "config/settings.yaml", output_dir: str = "output") -
     if len(batches) >= 2 and len(batches[-1]) < min_articles_per_ep:
         batches[-2].extend(batches[-1])
         batches.pop()
-    total_eps = len(batches)
-    print(f"\n[2-3/3] {total_eps} エピソードを生成します（{articles_per_ep} 記事/EP）...")
+    total_parts = len(batches)
+    print(f"\n[2/3] 脚本生成中（{total_parts} パート × 最大 {articles_per_ep} 記事）...")
 
-    results = []
+    all_lines: list[dict] = []
     summaries: dict[int, str] = {}
-    for ep, batch in enumerate(batches, 1):
-        mp3, summary = _run_episode(batch, ep, total_eps, date_str, run_dir, config_path)
+    for part, batch in enumerate(batches, 1):
+        lines, summary = _generate_script_batch(
+            batch, part, total_parts, date_str, run_dir, config_path
+        )
+        all_lines.extend(lines)
         if summary:
-            summaries[ep] = summary
-        if mp3:
-            results.append(mp3)
+            summaries[part] = summary
+
+    if not all_lines:
+        print("  [エラー] 脚本の生成に失敗しました。")
+        return []
+
+    # 全パートをまとめて 1 つの MP3 に
+    print(f"\n[3/3] 音声生成中（{len(all_lines)} 行）...")
+    mp3_path = os.path.join(run_dir, "newsy.mp3")
+    create_audio(all_lines, config_path, output_path=mp3_path)
+    print(f"  音声 → {mp3_path}")
 
     _save_readme(batches, run_dir, date_str, summaries)
 
@@ -151,9 +155,7 @@ def run(config_path: str = "config/settings.yaml", output_dir: str = "output") -
     build_site()
 
     print(f"\n{'=' * 50}")
-    print(f"  完了！{len(results)} エピソード生成しました。")
-    for r in results:
-        print(f"  {r}")
+    print(f"  完了！ {mp3_path}")
     print("=" * 50)
 
-    return results
+    return [mp3_path]

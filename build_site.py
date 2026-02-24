@@ -56,30 +56,58 @@ HTML = """\
 
 
 def parse_readme(readme_path: Path):
-    """README.md から EP 情報を抽出する"""
+    """README.md から情報を抽出する（新旧フォーマット両対応）"""
     text = readme_path.read_text(encoding="utf-8")
 
-    m = re.search(r"全 (\d+) エピソード / (\d+) 記事", text)
-    total_eps = int(m.group(1)) if m else 0
-    total_articles = int(m.group(2)) if m else 0
+    # 新形式: "20 記事 · `newsy.mp3`"
+    m_new = re.search(r"(\d+) 記事 · `(newsy\.mp3)`", text)
+    # 旧形式: "全 N エピソード / M 記事"
+    m_old = re.search(r"全 (\d+) エピソード / (\d+) 記事", text)
 
-    episodes = []
-    for block in re.split(r"(?=## EP\d+)", text):
-        em = re.match(r"## EP(\d+) — `(newsy_ep\d+\.mp3)`", block)
-        if not em:
+    if m_new:
+        total_articles = int(m_new.group(1))
+        mp3_file = m_new.group(2)
+    elif m_old:
+        total_articles = int(m_old.group(2))
+        mp3_file = None
+    else:
+        total_articles = 0
+        mp3_file = None
+
+    parts = []
+    # 新形式: "## パートN"
+    for block in re.split(r"(?=## パート\d+)", text):
+        pm = re.match(r"## パート(\d+)", block)
+        if not pm:
             continue
         summary_m = re.search(r"^> (.+)$", block, re.MULTILINE)
         articles = []
         for am in re.finditer(r"- \[(.+?)\]\((.+?)\)\s+_(.+?)_", block):
             articles.append({"title": am.group(1), "url": am.group(2), "site": am.group(3)})
-        episodes.append({
-            "num": em.group(1),
-            "mp3": em.group(2),
+        parts.append({
+            "num": pm.group(1),
             "summary": summary_m.group(1) if summary_m else "",
             "articles": articles,
         })
 
-    return total_eps, total_articles, episodes
+    # 旧形式: "## EPN — `newsy_epN.mp3`"
+    if not parts:
+        for block in re.split(r"(?=## EP\d+)", text):
+            em = re.match(r"## EP(\d+) — `(newsy_ep\d+\.mp3)`", block)
+            if not em:
+                continue
+            summary_m = re.search(r"^> (.+)$", block, re.MULTILINE)
+            articles = []
+            for am in re.finditer(r"- \[(.+?)\]\((.+?)\)\s+_(.+?)_", block):
+                articles.append({"title": am.group(1), "url": am.group(2), "site": am.group(3)})
+            parts.append({
+                "num": em.group(1),
+                "mp3": em.group(2),
+                "summary": summary_m.group(1) if summary_m else "",
+                "articles": articles,
+            })
+
+    return total_articles, mp3_file, parts
 
 
 def fmt_date(folder_name: str) -> str:
@@ -94,8 +122,8 @@ def build_index(folders: list[Path]) -> str:
         meta = ""
         readme = folder / "README.md"
         if readme.exists():
-            total_eps, total_articles, _ = parse_readme(readme)
-            meta = f"{total_eps} エピソード · {total_articles} 記事"
+            total_articles, _, _ = parse_readme(readme)
+            meta = f"{total_articles} 記事"
 
         cards.append(
             f'<a class="card-link" href="./{folder.name}/">'
@@ -111,34 +139,44 @@ def build_index(folders: list[Path]) -> str:
 
 
 def build_folder_page(folder: Path) -> str:
-    """EP 詳細ページの HTML を生成"""
+    """詳細ページの HTML を生成"""
     readme = folder / "README.md"
     if not readme.exists():
         return ""
 
-    total_eps, total_articles, episodes = parse_readme(readme)
+    total_articles, mp3_file, parts = parse_readme(readme)
 
-    eps_html = []
-    for ep in episodes:
+    # 音声プレーヤー（新形式: 1つの newsy.mp3 / 旧形式: パートごとの mp3）
+    if mp3_file:
+        audio_html = f'<div class="ep"><audio controls preload="none" src="./{mp3_file}"></audio></div>\n'
+    else:
+        audio_html = ""
+
+    parts_html = []
+    for part in parts:
         articles_html = ""
-        if ep["articles"]:
+        if part["articles"]:
             esc = html_mod.escape
             items = "".join(
                 f'<li><a href="{esc(a["url"])}" target="_blank">{esc(a["title"])}</a>'
                 f' <span class="src-site">{esc(a["site"])}</span></li>'
-                for a in ep["articles"]
+                for a in part["articles"]
             )
             articles_html = (
                 f'<details>'
-                f'<summary>引用記事 ({len(ep["articles"])})</summary>'
+                f'<summary>引用記事 ({len(part["articles"])})</summary>'
                 f'<ul class="sources">{items}</ul>'
                 f'</details>'
             )
-        eps_html.append(
+        # 旧形式の場合、パートごとに audio を表示
+        part_audio = ""
+        if not mp3_file and "mp3" in part:
+            part_audio = f'<audio controls preload="none" src="./{part["mp3"]}"></audio>'
+        parts_html.append(
             f'<div class="ep">'
-            f'<div class="ep-title">EP{ep["num"]}</div>'
-            f'<div class="ep-summary">{html_mod.escape(ep["summary"])}</div>'
-            f'<audio controls preload="none" src="./{ep["mp3"]}"></audio>'
+            f'<div class="ep-title">パート{part["num"]}</div>'
+            f'<div class="ep-summary">{html_mod.escape(part["summary"])}</div>'
+            f'{part_audio}'
             f'{articles_html}'
             f'</div>'
         )
@@ -146,8 +184,9 @@ def build_folder_page(folder: Path) -> str:
     body = (
         f'<a class="back" href="../">← 一覧に戻る</a>\n'
         f'<h2>{fmt_date(folder.name)}</h2>\n'
-        f'<p class="page-meta">全 {total_eps} エピソード · {total_articles} 記事</p>\n'
-        + "\n".join(eps_html)
+        f'<p class="page-meta">{total_articles} 記事</p>\n'
+        + audio_html
+        + "\n".join(parts_html)
     )
     return HTML.format(title=f"Newsy — {fmt_date(folder.name)}", body=body)
 
