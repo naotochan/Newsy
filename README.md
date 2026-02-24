@@ -6,6 +6,10 @@ AI・テクノロジーニュースを毎朝自動収集し、会話形式のラ
 
 https://naotochan.github.io/Newsy/
 
+※本アプリは VOICEBOX の音声エンジンを使わせていただいております．
+
+https://voicevox.hiroshiba.jp/
+
 ## 仕組み
 
 1. **RSS 取得** — 国内外 10 フィードから最新記事を収集
@@ -74,3 +78,4 @@ python main.py
 - OpenAI 互換 API / Anthropic API（脚本生成）
 - VOICEVOX（音声合成）
 - soundfile + numpy + ffmpeg（音声処理）
+
