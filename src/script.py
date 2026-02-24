@@ -115,13 +115,11 @@ def parse_script(script_text: str, config_path: str = "config/settings.yaml") ->
     lines = []
     for raw in script_text.splitlines():
         raw = raw.strip()
-        if raw.startswith(f"{host}:"):
-            text = raw[len(host) + 1:].strip()
-            if text:
-                lines.append({"speaker": "host", "text": text})
-        elif raw.startswith(f"{assistant}:"):
-            text = raw[len(assistant) + 1:].strip()
-            if text:
-                lines.append({"speaker": "assistant", "text": text})
+        for prefix, role in [(host, "host"), (assistant, "assistant")]:
+            if raw.startswith(f"{prefix}:") or raw.startswith(f"{prefix}："):
+                text = raw[len(prefix) + 1:].strip()
+                if text:
+                    lines.append({"speaker": role, "text": text})
+                break
 
     return lines
