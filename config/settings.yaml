@@ -1,0 +1,54 @@
+feeds:
+  # --- 国際 ---
+  - name: "MIT Technology Review"
+    url: "https://www.technologyreview.com/feed/"
+  - name: "Hacker News"
+    url: "https://hnrss.org/frontpage"
+  - name: "The Verge (AI)"
+    url: "https://www.theverge.com/ai-artificial-intelligence/rss/index.xml"
+  - name: "Wired"
+    url: "https://www.wired.com/feed/rss"
+  - name: "VentureBeat AI"
+    url: "https://venturebeat.com/category/ai/feed/"
+  - name: "TechCrunch AI"
+    url: "https://techcrunch.com/category/artificial-intelligence/feed/"
+  - name: "Google AI Blog"
+    url: "https://blog.google/technology/ai/rss/"
+  - name: "Anthropic News"
+    url: "https://www.anthropic.com/rss.xml"
+  # --- 日本 ---
+  - name: "TechCrunch Japan"
+    url: "https://jp.techcrunch.com/feed/"
+  - name: "Zenn (AI)"
+    url: "https://zenn.dev/topics/ai/feed"
+
+max_articles_per_feed: 3
+max_articles_total: 50
+max_articles_per_episode: 5   # 1エピソードあたりの記事数（≒5分）
+min_articles_per_episode: 3   # これ未満なら前のEPにまとめる
+
+llm:
+  provider: "lmstudio"   # "anthropic" or "lmstudio"
+  lmstudio:
+    base_url: "http://localhost:1234/v1"
+    model: "local-model"   # LM Studio で読み込んでいるモデル名（何でもOK）
+    max_tokens: 2048
+  anthropic:
+    model: "claude-opus-4-6"
+    max_tokens: 4096
+
+speakers:
+  host:
+    name: "めたん"
+    voicevox_id: 2   # 四国めたん ノーマル
+  assistant:
+    name: "ずんだもん"
+    voicevox_id: 3   # ずんだもん ノーマル
+
+voicevox:
+  base_url: "http://localhost:50021"
+  speed_scale: 1.1   # 話速 (1.0 = 標準)
+
+output:
+  dir: "output"
+  bitrate: "192k"

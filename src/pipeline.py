@@ -1,0 +1,159 @@
+"""パイプライン — ニュース取得から音声生成までを一括実行する"""
+
+import os
+from datetime import datetime
+from pathlib import Path
+from typing import Optional
+
+import yaml
+
+from .fetcher import fetch_all_news, Article
+from .script import generate_script, parse_script
+from .tts import check_voicevox, create_audio
+
+
+def _save_sources(articles: list[Article], path: str, date_str: str, ep: int) -> None:
+    lines = [f"# Newsy ソース記事メモ — EP{ep} ({date_str})\n"]
+    for i, a in enumerate(articles, 1):
+        lines.append(f"## {i}. {a.title}")
+        lines.append(f"- **出典**: {a.source}")
+        lines.append(f"- **URL**: {a.url}")
+        body = a.content or a.summary or ""
+        if body:
+            snippet = body[:300].replace("\n", " ")
+            lines.append(f"- **概要**: {snippet}…")
+        lines.append("")
+    with open(path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines))
+
+
+def _extract_summary(script_text: str) -> str:
+    """台本先頭の「概要: ...」行を抽出する"""
+    for raw in script_text.splitlines():
+        raw = raw.strip()
+        if raw.startswith("概要:"):
+            return raw[len("概要:"):].strip()
+    return ""
+
+
+def _save_readme(
+    batches: list[list[Article]],
+    run_dir: str,
+    date_str: str,
+    summaries: dict[int, str] | None = None,
+) -> None:
+    dt = datetime.strptime(date_str, "%Y%m%d_%H%M")
+    lines = [
+        f"# Newsy — {dt.strftime('%Y年%m月%d日 %H:%M')}",
+        f"\n全 {len(batches)} エピソード / {sum(len(b) for b in batches)} 記事\n",
+    ]
+    for ep, batch in enumerate(batches, 1):
+        lines.append(f"## EP{ep} — `newsy_ep{ep}.mp3`")
+        if summaries and ep in summaries:
+            lines.append(f"\n> {summaries[ep]}\n")
+        for a in batch:
+            lines.append(f"- [{a.title}]({a.url})  _{a.source}_")
+        lines.append("")
+    with open(os.path.join(run_dir, "README.md"), "w", encoding="utf-8") as f:
+        f.write("\n".join(lines))
+
+
+def _run_episode(
+    articles: list[Article],
+    ep: int,
+    total_eps: int,
+    date_str: str,
+    output_dir: str,
+    config_path: str,
+) -> tuple[Optional[str], str]:
+    """エピソードを処理し (mp3_path, summary) を返す"""
+    print(f"\n--- EP{ep}/{total_eps} ({len(articles)} 記事) ---")
+
+    # 脚本生成
+    script_text = generate_script(articles, config_path, ep=ep, total_eps=total_eps)
+    lines = parse_script(script_text, config_path)
+    summary = _extract_summary(script_text)
+
+    base = f"ep{ep}" if total_eps > 1 else "ep1"
+
+    script_path = os.path.join(output_dir, f"script_{base}.txt")
+    with open(script_path, "w", encoding="utf-8") as f:
+        f.write(script_text)
+
+    sources_path = os.path.join(output_dir, f"sources_{base}.md")
+    _save_sources(articles, sources_path, date_str, ep)
+
+    print(f"  脚本 {len(lines)} 行 → {script_path}")
+    print(f"  ソース → {sources_path}")
+
+    if not lines:
+        print("  [警告] 脚本のパースに失敗しました。スキップします。")
+        return None, summary
+
+    # 音声生成
+    mp3_path = os.path.join(output_dir, f"newsy_{base}.mp3")
+    create_audio(lines, config_path, output_path=mp3_path)
+    print(f"  音声 → {mp3_path}")
+
+    return mp3_path, summary
+
+
+def run(config_path: str = "config/settings.yaml", output_dir: str = "output") -> list[str]:
+    print("=" * 50)
+    print("  Newsy - AI ラジオ番組生成")
+    print("=" * 50)
+
+    if not check_voicevox():
+        print("\n[エラー] VOICEVOX が起動していません。")
+        print("  VOICEVOX を起動してから再実行してください。")
+        return []
+
+    with open(config_path, encoding="utf-8") as f:
+        cfg = yaml.safe_load(f)
+    articles_per_ep = cfg.get("max_articles_per_episode", 5)
+
+    date_str = datetime.now().strftime("%Y%m%d_%H%M")
+    run_dir = os.path.join(output_dir, date_str)
+    Path(run_dir).mkdir(parents=True, exist_ok=True)
+
+    # 1. ニュース取得
+    print("\n[1/3] ニュース取得中...")
+    articles = fetch_all_news(config_path)
+    if not articles:
+        print("  [エラー] 記事を取得できませんでした。")
+        return []
+    print(f"  {len(articles)} 件の記事を取得しました。")
+
+    # 2 & 3. エピソードごとに脚本生成 → 音声生成
+    min_articles_per_ep = cfg.get("min_articles_per_episode", 3)
+    batches = [articles[i:i + articles_per_ep] for i in range(0, len(articles), articles_per_ep)]
+    # 最後のバッチが少なすぎる場合、前のバッチにまとめる
+    if len(batches) >= 2 and len(batches[-1]) < min_articles_per_ep:
+        batches[-2].extend(batches[-1])
+        batches.pop()
+    total_eps = len(batches)
+    print(f"\n[2-3/3] {total_eps} エピソードを生成します（{articles_per_ep} 記事/EP）...")
+
+    results = []
+    summaries: dict[int, str] = {}
+    for ep, batch in enumerate(batches, 1):
+        mp3, summary = _run_episode(batch, ep, total_eps, date_str, run_dir, config_path)
+        if summary:
+            summaries[ep] = summary
+        if mp3:
+            results.append(mp3)
+
+    _save_readme(batches, run_dir, date_str, summaries)
+
+    # 静的サイト生成（GitHub Pages 用）
+    from build_site import build_site
+    print("\n[4/4] 静的サイト生成中...")
+    build_site()
+
+    print(f"\n{'=' * 50}")
+    print(f"  完了！{len(results)} エピソード生成しました。")
+    for r in results:
+        print(f"  {r}")
+    print("=" * 50)
+
+    return results
