@@ -9,7 +9,7 @@ import yaml
 
 from .fetcher import fetch_all_news, Article
 from .script import generate_script, parse_script
-from .tts import check_voicevox, create_audio
+from .tts import check_tts, create_audio
 
 
 def _save_sources(articles: list[Article], path: str, date_str: str, ep: int) -> None:
@@ -96,9 +96,10 @@ def run(config_path: str = "config/settings.yaml", output_dir: str = "output") -
     print("  Newsy - AI ラジオ番組生成")
     print("=" * 50)
 
-    if not check_voicevox():
-        print("\n[エラー] VOICEVOX が起動していません。")
-        print("  VOICEVOX を起動してから再実行してください。")
+    if not check_tts(config_path):
+        print("\n[エラー] TTS が利用できません。")
+        print("  ElevenLabs: ELEVEN_API_KEY を設定してください。")
+        print("  VOICEVOX: サーバーを起動してください。")
         return []
 
     with open(config_path, encoding="utf-8") as f:

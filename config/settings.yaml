@@ -1,7 +1,59 @@
 feeds:
-  # --- 国際 ---
-  - name: "MIT Technology Review"
-    url: "https://www.technologyreview.com/feed/"
+  # --- 国内メディア AI 総合TECH ---
+  - name: "ITmedia NEWS (AI・ロボット)"
+    url: "https://rss.itmedia.co.jp/rss/2.0/news_ai.xml"
+  - name: "Ledge.ai (AI専門メディア)"
+    url: "https://ledge.ai/feed"
+  - name: "AINOW (AI専門メディア)"
+    url: "https://ainow.ai/feed"
+  - name: "TechCrunch Japan (アーカイブ・動向)"
+    url: "https://jp.techcrunch.com/feed"
+  - name: "WIRED.jp (社会・カルチャー)"
+    url: "https://wired.jp/rss/v1.0/rss.xml"
+  - name: "GIZMODO JAPAN (ガジェット・トレンド)"
+    url: "https://www.gizmodo.jp/index.xml"
+  - name: "PC Watch (ハードウェア・AI PC)"
+    url: "https://pc.watch.impress.co.jp/data/rss/1.0/pcw/feed.rdf"
+
+    # --- 国内開発者コミュニティ ---
+  - name: "Zenn (AI)"
+    url: "https://zenn.dev/topics/ai/feed"
+  - name: "Zenn (Machine Learning)"
+    url: "https://zenn.dev/topics/machinelearning/feed"
+  - name: "Qiita (AI)"
+    url: "https://qiita.com/tags/ai/feed"
+  - name: "Publickey (クラウド・エンタープライズIT)"
+    url: "https://www.publickey1.jp/atom.xml"
+
+    # --- 海外メディア（一次情報・グローバル） ---
+  - name: "The Verge (Tech General)"
+    url: "https://www.theverge.com/rss/index.xml"
+  - name: "Ars Technica (Deep Tech)"
+    url: "https://feeds.arstechnica.com/arstechnica/index"
+  - name: "TechCrunch (Global Startups)"
+    url: "https://techcrunch.com/feed"
+  - name: "Wired (Global Science/Tech)"
+    url: "https://www.wired.com/feed/rss"
+  - name: "MIT Technology Review (AI Section)"
+    url: "https://www.technologyreview.com/topic/artificial-intelligence/feed"
+  - name: "The Next Web (Neural)"
+    url: "https://thenextweb.com/feed"
+
+    # --- 海外研究・開発者向け ---
+  - name: "OpenAI Blog"
+    url: "https://openai.com/news/rss.xml"
+  - name: "Google Research Blog"
+    url: "http://feeds.feedburner.com/blogspot/gweb"
+  - name: "Google AI Blog"
+    url: "https://blog.google/technology/ai/rss/"
+  - name: "Hacker News (Top Stories)"
+    url: "https://news.ycombinator.com/rss"
+  - name: "Weights & Biases (Deep Learning Tips)"
+    url: "https://wandb.ai/fully-connected/feed"
+  - name: "Hugging Face Blog"
+    url: "https://huggingface.co/blog/feed.xml"
+  - name: "Anthropic News"
+    url: "https://www.anthropic.com/rss.xml"
   - name: "Hacker News"
     url: "https://hnrss.org/frontpage"
   - name: "The Verge (AI)"
@@ -12,15 +64,6 @@ feeds:
     url: "https://venturebeat.com/category/ai/feed/"
   - name: "TechCrunch AI"
     url: "https://techcrunch.com/category/artificial-intelligence/feed/"
-  - name: "Google AI Blog"
-    url: "https://blog.google/technology/ai/rss/"
-  - name: "Anthropic News"
-    url: "https://www.anthropic.com/rss.xml"
-  # --- 日本 ---
-  - name: "TechCrunch Japan"
-    url: "https://jp.techcrunch.com/feed/"
-  - name: "Zenn (AI)"
-    url: "https://zenn.dev/topics/ai/feed"
 
 max_articles_per_feed: 3
 max_articles_total: 50
@@ -31,23 +74,35 @@ llm:
   provider: "lmstudio"   # "anthropic" or "lmstudio"
   lmstudio:
     base_url: "http://localhost:1234/v1"
-    model: "local-model"   # LM Studio で読み込んでいるモデル名（何でもOK）
+    model: "local-model"
     max_tokens: 2048
   anthropic:
-    model: "claude-opus-4-6"
+    model: "claude-sonnet-4-6"
     max_tokens: 4096
+
+tts:
+  provider: "voicevox"   # "elevenlabs" or "voicevox"
 
 speakers:
   host:
     name: "めたん"
-    voicevox_id: 2   # 四国めたん ノーマル
+    voicevox_id: 2                    # VOICEVOX 用: 四国めたん ノーマル
+    elevenlabs_voice_id: "sRYzP8TwEiiqAWebdYPJ"           # ElevenLabs 用: Voice Library から取得
   assistant:
     name: "ずんだもん"
-    voicevox_id: 3   # ずんだもん ノーマル
+    voicevox_id: 3                    # VOICEVOX 用: ずんだもん ノーマル
+    elevenlabs_voice_id: "EVmK7c3z026INySFvQLP"           # ElevenLabs 用: Voice Library から取得
+
+elevenlabs:
+  model_id: "eleven_multilingual_v2"  # eleven_multilingual_v2 / eleven_v3
+  output_format: "mp3_44100_128"
+  stability: 0.5
+  similarity_boost: 0.75
+  style: 0.0
 
 voicevox:
   base_url: "http://localhost:50021"
-  speed_scale: 1.1   # 話速 (1.0 = 標準)
+  speed_scale: 1.1
 
 output:
   dir: "output"

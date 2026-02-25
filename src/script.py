@@ -60,10 +60,12 @@ def _format_articles(articles: list[Article]) -> str:
 def _call_anthropic(prompt: str, llm_cfg: dict) -> str:
     import anthropic
     cfg = llm_cfg.get("anthropic", {})
+    model = os.getenv("ANTHROPIC_MODEL") or cfg.get("model", "claude-sonnet-4-6")
+    max_tokens = int(os.getenv("ANTHROPIC_MAX_TOKENS") or cfg.get("max_tokens", 4096))
     client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
     message = client.messages.create(
-        model=cfg.get("model", "claude-opus-4-6"),
-        max_tokens=cfg.get("max_tokens", 4096),
+        model=model,
+        max_tokens=max_tokens,
         messages=[{"role": "user", "content": prompt}]
     )
     return message.content[0].text
@@ -107,19 +109,68 @@ def generate_script(
         return _call_lmstudio(prompt, llm_cfg)
 
 
+def _clean_script_text(text: str) -> str:
+    """LLM 出力のノイズを除去して parse しやすい形に整形する"""
+    import re
+    cleaned = []
+    for line in text.splitlines():
+        line = line.strip()
+        # 区切り線・空行をスキップ
+        if not line or line.startswith("---"):
+            continue
+        # セクションヘッダ（### ニュース1, **オープニング** 等）をスキップ
+        if line.startswith("#"):
+            continue
+        if line.startswith("**") and not any(
+            name in line for name in _SPEAKER_NAMES_CACHE
+        ):
+            continue
+        # ト書き行（*(音楽が流れる)* のみの行）をスキップ
+        if re.match(r"^[*_]*[（(].+[)）][*_]*$", line):
+            continue
+        # マークダウン太字の話者名: **めたん:** → めたん:
+        line = re.sub(r"\*\*(.+?)[：:]\*\*", r"\1:", line)
+        # 行頭のト書き（(笑み) や *(音楽)* など）を除去
+        line = re.sub(r"^[*_]*[（(][^)）]*[)）][*_]*\s*", "", line)
+        line = line.strip()
+        if line:
+            cleaned.append(line)
+    return "\n".join(cleaned)
+
+
+# parse_script 内で話者名キャッシュを使うためのグローバル変数
+_SPEAKER_NAMES_CACHE: list[str] = []
+
+
 def parse_script(script_text: str, config_path: str = "config/settings.yaml") -> list[dict]:
     """台本テキストを [{speaker: 'host'|'assistant', text: str}] に変換する"""
     config = _load_config(config_path)
     host, assistant = _load_speakers(config)
 
+    # クリーンアップ用に話者名をキャッシュ
+    _SPEAKER_NAMES_CACHE.clear()
+    _SPEAKER_NAMES_CACHE.extend([host, assistant])
+
+    cleaned = _clean_script_text(script_text)
+    raw_lines = cleaned.splitlines()
+
     lines = []
-    for raw in script_text.splitlines():
-        raw = raw.strip()
+    i = 0
+    while i < len(raw_lines):
+        raw = raw_lines[i]
         for prefix, role in [(host, "host"), (assistant, "assistant")]:
             if raw.startswith(f"{prefix}:") or raw.startswith(f"{prefix}："):
                 text = raw[len(prefix) + 1:].strip()
+                # 話者名だけの行 → 次の行がセリフ本文
+                if not text and i + 1 < len(raw_lines):
+                    i += 1
+                    text = raw_lines[i].strip()
+                # 「」で囲まれたセリフから括弧を除去
+                if text.startswith("「") and text.endswith("」"):
+                    text = text[1:-1]
                 if text:
                     lines.append({"speaker": role, "text": text})
                 break
+        i += 1
 
     return lines
