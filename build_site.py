@@ -62,6 +62,10 @@ HTML = """\
   .sources a:hover {{ color: #8ec5ff; text-decoration: underline; }}
   .sources a:focus-visible {{ outline: 2px solid #4a9eff; outline-offset: 2px; border-radius: 2px; }}
   .sources .src-site {{ color: #777; font-size: 0.75rem; margin-top: 2px; }}
+  .ep[data-time] {{ cursor: pointer; }}
+  .ep[data-time]:hover {{ background: #242426; border-color: #3a3a3c; }}
+  .ep-time {{ font-size: 0.78rem; color: #4a9eff; font-weight: 600;
+              margin-left: 8px; font-variant-numeric: tabular-nums; }}
   @media (max-width: 480px) {{
     body {{ padding: 14px 12px; }}
     h1 {{ font-size: 1.35rem; }}
@@ -96,9 +100,9 @@ def parse_readme(readme_path: Path):
         mp3_file = None
 
     parts = []
-    # 新形式: "## パートN"
+    # 新形式: "## パートN" or "## パートN [MM:SS]"
     for block in re.split(r"(?=## パート\d+)", text):
-        pm = re.match(r"## パート(\d+)", block)
+        pm = re.match(r"## パート(\d+)(?:\s+\[(\d{2}:\d{2})\])?", block)
         if not pm:
             continue
         summary_m = re.search(r"^> (.+)$", block, re.MULTILINE)
@@ -107,6 +111,7 @@ def parse_readme(readme_path: Path):
             articles.append({"title": am.group(1), "url": am.group(2), "site": am.group(3)})
         parts.append({
             "num": pm.group(1),
+            "time": pm.group(2),
             "summary": summary_m.group(1) if summary_m else "",
             "articles": articles,
         })
@@ -169,7 +174,7 @@ def build_folder_page(folder: Path) -> str:
 
     # 音声プレーヤー（新形式: 1つの newsy.mp3 / 旧形式: パートごとの mp3）
     if mp3_file:
-        audio_html = f'<div class="ep"><audio controls preload="none" src="./{mp3_file}"></audio></div>\n'
+        audio_html = f'<div class="ep"><audio id="player" controls preload="none" src="./{mp3_file}"></audio></div>\n'
     else:
         audio_html = ""
 
@@ -193,14 +198,34 @@ def build_folder_page(folder: Path) -> str:
         part_audio = ""
         if not mp3_file and "mp3" in part:
             part_audio = f'<audio controls preload="none" src="./{part["mp3"]}"></audio>'
+        time_attr = f' data-time="{part["time"]}"' if part.get("time") else ""
+        time_badge = f'<span class="ep-time">{part["time"]}</span>' if part.get("time") else ""
         parts_html.append(
-            f'<div class="ep">'
-            f'<div class="ep-title">パート{part["num"]}</div>'
+            f'<div class="ep"{time_attr}>'
+            f'<div class="ep-title">パート{part["num"]}{time_badge}</div>'
             f'<div class="ep-summary">{html_mod.escape(part["summary"])}</div>'
             f'{part_audio}'
             f'{articles_html}'
             f'</div>'
         )
+
+    # パートクリックでシークする JS
+    seek_js = ""
+    has_timestamps = any(p.get("time") for p in parts)
+    if mp3_file and has_timestamps:
+        seek_js = """
+<script>
+document.querySelectorAll('.ep[data-time]').forEach(el => {
+  el.addEventListener('click', e => {
+    if (e.target.closest('details, a')) return;
+    const p = document.getElementById('player');
+    if (!p) return;
+    const [m, s] = el.dataset.time.split(':').map(Number);
+    p.currentTime = m * 60 + s;
+    p.play();
+  });
+});
+</script>"""
 
     body = (
         f'<a class="back" href="../">← 一覧に戻る</a>\n'
@@ -208,6 +233,7 @@ def build_folder_page(folder: Path) -> str:
         f'<p class="page-meta">{total_articles} 記事</p>\n'
         + audio_html
         + "\n".join(parts_html)
+        + seek_js
     )
     return HTML.format(title=f"Newsy — {fmt_date(folder.name)}", body=body)
 

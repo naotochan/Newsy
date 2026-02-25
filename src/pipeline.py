@@ -36,11 +36,18 @@ def _extract_summary(script_text: str) -> str:
     return ""
 
 
+def _fmt_timestamp(seconds: float) -> str:
+    """秒数を MM:SS 形式に変換する"""
+    m, s = divmod(int(seconds), 60)
+    return f"{m:02d}:{s:02d}"
+
+
 def _save_readme(
     batches: list[list[Article]],
     run_dir: str,
     date_str: str,
     summaries: dict[int, str] | None = None,
+    part_timestamps: list[float] | None = None,
 ) -> None:
     dt = datetime.strptime(date_str, "%Y%m%d_%H%M")
     total_articles = sum(len(b) for b in batches)
@@ -49,7 +56,10 @@ def _save_readme(
         f"\n{total_articles} 記事 · `newsy.mp3`\n",
     ]
     for part, batch in enumerate(batches, 1):
-        lines.append(f"## パート{part}")
+        ts = ""
+        if part_timestamps and part - 1 < len(part_timestamps):
+            ts = f" [{_fmt_timestamp(part_timestamps[part - 1])}]"
+        lines.append(f"## パート{part}{ts}")
         if summaries and part in summaries:
             lines.append(f"\n> {summaries[part]}\n")
         for a in batch:
@@ -129,12 +139,14 @@ def run(config_path: str = "config/settings.yaml", output_dir: str = "output") -
     print(f"\n[2/3] 脚本生成中（{total_parts} パート × 最大 {articles_per_ep} 記事）...")
 
     all_lines: list[dict] = []
+    part_line_counts: list[int] = []
     summaries: dict[int, str] = {}
     for part, batch in enumerate(batches, 1):
         lines, summary = _generate_script_batch(
             batch, part, total_parts, date_str, run_dir, config_path
         )
         all_lines.extend(lines)
+        part_line_counts.append(len(lines))
         if summary:
             summaries[part] = summary
 
@@ -145,10 +157,12 @@ def run(config_path: str = "config/settings.yaml", output_dir: str = "output") -
     # 全パートをまとめて 1 つの MP3 に
     print(f"\n[3/3] 音声生成中（{len(all_lines)} 行）...")
     mp3_path = os.path.join(run_dir, "newsy.mp3")
-    create_audio(all_lines, config_path, output_path=mp3_path)
+    mp3_path, part_timestamps = create_audio(
+        all_lines, config_path, output_path=mp3_path, part_line_counts=part_line_counts
+    )
     print(f"  音声 → {mp3_path}")
 
-    _save_readme(batches, run_dir, date_str, summaries)
+    _save_readme(batches, run_dir, date_str, summaries, part_timestamps)
 
     # 静的サイト生成（GitHub Pages 用）
     from build_site import build_site

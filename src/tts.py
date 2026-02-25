@@ -67,21 +67,42 @@ def create_audio_elevenlabs(
     lines: list[dict],
     config_path: str = "config/settings.yaml",
     output_path: str = "output/newsy.mp3",
-) -> str:
+    part_line_counts: list[int] | None = None,
+) -> tuple[str, list[float]]:
     """ElevenLabs で全行を音声合成し、連結して MP3 に書き出す"""
     config = _load_config(config_path)
+    el_cfg = _get_elevenlabs_config(config)
     total = len(lines)
 
+    # パート境界を計算
+    part_boundaries: set[int] = set()
+    if part_line_counts:
+        acc = 0
+        for count in part_line_counts[:-1]:
+            acc += count
+            part_boundaries.add(acc)
+
+    # ElevenLabs の出力ビットレート（kbps）を取得
+    fmt = el_cfg.get("output_format", "mp3_44100_128")
+    bitrate_kbps = int(fmt.rsplit("_", 1)[-1]) if "_" in fmt else 128
+
     segments: list[bytes] = []
-    for i, line in enumerate(lines, 1):
+    part_timestamps = [0.0]
+    cumulative_secs = 0.0
+
+    for i, line in enumerate(lines):
+        if i in part_boundaries:
+            part_timestamps.append(cumulative_secs)
+
         role = line["speaker"]
         text = line["text"]
         voice_id = _get_elevenlabs_voice_id(role, config)
 
-        print(f"  [{i}/{total}] {role}: {text[:40]}...")
+        print(f"  [{i + 1}/{total}] {role}: {text[:40]}...")
         try:
             mp3_bytes = synthesize_elevenlabs(text, voice_id, config)
             segments.append(mp3_bytes)
+            cumulative_secs += len(mp3_bytes) * 8 / (bitrate_kbps * 1000)
         except Exception as e:
             print(f"  [警告] 音声合成失敗: {e}")
 
@@ -110,7 +131,7 @@ def create_audio_elevenlabs(
         import shutil
         shutil.rmtree(tmpdir, ignore_errors=True)
 
-    return output_path
+    return output_path, part_timestamps
 
 
 # ── VOICEVOX ───────────────────────────────────────────
@@ -176,30 +197,46 @@ def create_audio_voicevox(
     lines: list[dict],
     config_path: str = "config/settings.yaml",
     output_path: str = "output/newsy.mp3",
-) -> str:
+    part_line_counts: list[int] | None = None,
+) -> tuple[str, list[float]]:
     """VOICEVOX で全行を音声合成し MP3 に書き出す"""
     config = _load_config(config_path)
     base_url = _get_voicevox_base_url(config)
     speed_scale = _get_voicevox_speed_scale(config)
 
+    # パート境界を計算
+    part_boundaries: set[int] = set()
+    if part_line_counts:
+        acc = 0
+        for count in part_line_counts[:-1]:
+            acc += count
+            part_boundaries.add(acc)
+
     segments: list[np.ndarray] = []
     samplerate = 24000
     prev_speaker = None
     total = len(lines)
+    cumulative_samples = 0
+    part_timestamps = [0.0]
 
-    for i, line in enumerate(lines, 1):
+    for i, line in enumerate(lines):
+        if i in part_boundaries:
+            part_timestamps.append(cumulative_samples / samplerate)
+
         role = line["speaker"]
         text = line["text"]
         speaker_id = _get_voicevox_speaker_id(role, config)
 
-        print(f"  [{i}/{total}] {role}: {text[:40]}...")
+        print(f"  [{i + 1}/{total}] {role}: {text[:40]}...")
         try:
             wav = synthesize_voicevox(text, speaker_id, base_url, speed_scale)
             if wav:
                 data, samplerate = _wav_bytes_to_array(wav)
                 gap_ms = 700 if (prev_speaker and prev_speaker != role) else 400
-                segments.append(_make_silence(gap_ms, samplerate))
+                silence = _make_silence(gap_ms, samplerate)
+                segments.append(silence)
                 segments.append(data)
+                cumulative_samples += len(silence) + len(data)
                 prev_speaker = role
         except Exception as e:
             print(f"  [警告] 音声合成失敗: {e}")
@@ -222,7 +259,7 @@ def create_audio_voicevox(
     )
     os.unlink(tmp_wav)
 
-    return output_path
+    return output_path, part_timestamps
 
 
 # ── ディスパッチ ────────────────────────────────────────
@@ -241,11 +278,12 @@ def create_audio(
     lines: list[dict],
     config_path: str = "config/settings.yaml",
     output_path: str = "output/newsy.mp3",
-) -> str:
-    """設定に応じた TTS で音声を生成する"""
+    part_line_counts: list[int] | None = None,
+) -> tuple[str, list[float]]:
+    """設定に応じた TTS で音声を生成する。(パス, パート開始秒リスト) を返す"""
     config = _load_config(config_path)
     provider = _get_tts_provider(config)
     if provider == "elevenlabs":
-        return create_audio_elevenlabs(lines, config_path, output_path)
+        return create_audio_elevenlabs(lines, config_path, output_path, part_line_counts)
     else:
-        return create_audio_voicevox(lines, config_path, output_path)
+        return create_audio_voicevox(lines, config_path, output_path, part_line_counts)
