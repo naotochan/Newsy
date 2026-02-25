@@ -23,7 +23,7 @@ SCRIPT_PROMPT = """\
 - 専門用語は必ず簡単な言葉で補足説明する
 - 番組全体で5〜8分（読み上げ時）になる量にする
 - 各発言は1〜3文程度に収める
-- 冒頭に番組のオープニング（エピソード番号を自然に触れる）、末尾にクロージングを入れる
+- {opening_rule}
 - 必ず以下のフォーマットだけで出力し、他の説明文は一切入れない
 
 出力フォーマット（厳守）:
@@ -95,7 +95,18 @@ def generate_script(
     host, assistant = _load_speakers(config)
     news_text = _format_articles(articles)
     ep_info = f"第{ep}回 / 全{total_eps}回" if total_eps > 1 else "単独エピソード"
-    prompt = SCRIPT_PROMPT.format(host=host, assistant=assistant, news=news_text, ep_info=ep_info)
+
+    if ep == 1:
+        opening_rule = "冒頭に番組のオープニング（挨拶・エピソード番号を自然に触れる）、末尾にクロージングを入れる"
+    elif ep == total_eps:
+        opening_rule = "冒頭は「次のトピックです」「続いては」など自然な繋ぎで始める（挨拶や番組紹介は不要）。末尾に番組全体のクロージングを入れる"
+    else:
+        opening_rule = "冒頭は「次のトピックです」「続いては」など自然な繋ぎで始める（挨拶や番組紹介は不要）。末尾のクロージングも不要"
+
+    prompt = SCRIPT_PROMPT.format(
+        host=host, assistant=assistant, news=news_text,
+        ep_info=ep_info, opening_rule=opening_rule,
+    )
 
     llm_cfg = config.get("llm", {})
     # .env の LLM_PROVIDER を優先、なければ settings.yaml の値
