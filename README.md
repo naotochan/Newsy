@@ -90,6 +90,6 @@ python main.py
 
 - Python 3.13
 - feedparser / trafilatura（RSS + 本文抽出）
-- OpenAI 互換 API / Anthropic API（脚本生成）
+- LM Studio / Anthropic API（脚本生成）
 - VOICEVOX / ElevenLabs（音声合成）
 - soundfile + numpy + ffmpeg（音声処理）
