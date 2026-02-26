@@ -15,6 +15,16 @@ feeds:
   - name: "PC Watch (ハードウェア・AI PC)"
     url: "https://pc.watch.impress.co.jp/data/rss/1.0/pcw/feed.rdf"
 
+    # --- UI/UX・デザイン × AI ---
+  - name: "UX Collective"
+    url: "https://uxdesign.cc/feed"
+  - name: "Nielsen Norman Group"
+    url: "https://www.nngroup.com/feed/rss/"
+  - name: "Smashing Magazine (UX/Design)"
+    url: "https://www.smashingmagazine.com/feed/"
+  - name: "A List Apart"
+    url: "https://alistapart.com/main/feed/"
+
     # --- 海外メディア（一次情報・グローバル） ---
   - name: "The Verge (Tech General)"
     url: "https://www.theverge.com/rss/index.xml"
@@ -28,6 +38,26 @@ feeds:
     url: "https://www.technologyreview.com/topic/artificial-intelligence/feed"
   - name: "The Next Web (Neural)"
     url: "https://thenextweb.com/feed"
+
+    # --- arXiv（AI + 応用分野） ---
+  - name: "arXiv cs.AI (人工知能)"
+    url: "https://rss.arxiv.org/rss/cs.AI"
+  - name: "arXiv cs.LG (機械学習)"
+    url: "https://rss.arxiv.org/rss/cs.LG"
+  - name: "arXiv cs.CL (自然言語処理)"
+    url: "https://rss.arxiv.org/rss/cs.CL"
+  - name: "arXiv cs.RO (ロボティクス)"
+    url: "https://rss.arxiv.org/rss/cs.RO"
+  - name: "arXiv cs.HC (ヒューマンコンピュータ・医療AI)"
+    url: "https://rss.arxiv.org/rss/cs.HC"
+  - name: "arXiv q-bio (計算生物学・遺伝子工学)"
+    url: "https://rss.arxiv.org/rss/q-bio"
+  - name: "arXiv q-bio.QM (定量的手法・医療応用)"
+    url: "https://rss.arxiv.org/rss/q-bio.QM"
+  - name: "arXiv eess (エネルギー・電気工学)"
+    url: "https://rss.arxiv.org/rss/eess"
+  - name: "arXiv physics.ao-ph (大気・海洋・気候)"
+    url: "https://rss.arxiv.org/rss/physics.ao-ph"
 
     # --- 海外 AI 企業・技術ブログ ---
   - name: "OpenAI Blog"
