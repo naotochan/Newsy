@@ -15,16 +15,6 @@ feeds:
   - name: "PC Watch (ハードウェア・AI PC)"
     url: "https://pc.watch.impress.co.jp/data/rss/1.0/pcw/feed.rdf"
 
-    # --- 国内開発者コミュニティ ---
-  - name: "Zenn (AI)"
-    url: "https://zenn.dev/topics/ai/feed"
-  - name: "Zenn (Machine Learning)"
-    url: "https://zenn.dev/topics/machinelearning/feed"
-  - name: "Qiita (AI)"
-    url: "https://qiita.com/tags/ai/feed"
-  - name: "Publickey (クラウド・エンタープライズIT)"
-    url: "https://www.publickey1.jp/atom.xml"
-
     # --- 海外メディア（一次情報・グローバル） ---
   - name: "The Verge (Tech General)"
     url: "https://www.theverge.com/rss/index.xml"
@@ -39,15 +29,13 @@ feeds:
   - name: "The Next Web (Neural)"
     url: "https://thenextweb.com/feed"
 
-    # --- 海外研究・開発者向け ---
+    # --- 海外 AI 企業・技術ブログ ---
   - name: "OpenAI Blog"
     url: "https://openai.com/news/rss.xml"
   - name: "Google Research Blog"
     url: "http://feeds.feedburner.com/blogspot/gweb"
   - name: "Google AI Blog"
     url: "https://blog.google/technology/ai/rss/"
-  - name: "Hacker News (Top Stories)"
-    url: "https://news.ycombinator.com/rss"
   - name: "Weights & Biases (Deep Learning Tips)"
     url: "https://wandb.ai/fully-connected/feed"
   - name: "Hugging Face Blog"
