@@ -164,11 +164,6 @@ def run(config_path: str = "config/settings.yaml", output_dir: str = "output") -
 
     _save_readme(batches, run_dir, date_str, summaries, part_timestamps)
 
-    # 静的サイト生成（GitHub Pages 用）
-    from build_site import build_site
-    print("\n[4/4] 静的サイト生成中...")
-    build_site()
-
     print(f"\n{'=' * 50}")
     print(f"  完了！ {mp3_path}")
     print("=" * 50)

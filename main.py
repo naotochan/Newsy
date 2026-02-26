@@ -2,7 +2,6 @@
 """Newsy — AI ラジオ番組を自動生成する CLI"""
 
 import argparse
-import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -38,44 +37,18 @@ def setup_logging() -> Path:
     return log_path
 
 
-def git_push():
-    """docs/ を自動コミット & push する"""
-    now = datetime.now().strftime("%Y-%m-%d %H:%M")
-    try:
-        subprocess.run(["git", "add", "docs/"], check=True)
-        result = subprocess.run(
-            ["git", "diff", "--cached", "--quiet"],
-            capture_output=True,
-        )
-        if result.returncode == 0:
-            print("\n[push] docs/ に変更なし。スキップします。")
-            return
-        subprocess.run(
-            ["git", "commit", "-m", f"Update: {now}"],
-            check=True,
-        )
-        subprocess.run(["git", "push"], check=True)
-        print(f"\n[push] GitHub に push しました ({now})")
-    except subprocess.CalledProcessError as e:
-        print(f"\n[push] git push に失敗しました: {e}")
-
-
 def main():
     parser = argparse.ArgumentParser(
-        description="Newsy: AI・テクノロジーニュースをラジオ番組に変換して音声を生成する"
+        description="Newsy: ニュースを会話形式のラジオ番組に変換して音声を生成する"
     )
     parser.add_argument("--config", default="config/settings.yaml", help="設定ファイルのパス")
     parser.add_argument("--output", default="output", help="出力ディレクトリ")
-    parser.add_argument("--no-push", action="store_true", help="自動 push を無効化")
     args = parser.parse_args()
 
     log_path = setup_logging()
     print(f"ログ: {log_path}\n")
 
     results = run(config_path=args.config, output_dir=args.output)
-
-    if results and not args.no_push:
-        git_push()
 
     sys.exit(0 if results else 1)
 
