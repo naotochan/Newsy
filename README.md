@@ -21,7 +21,7 @@ git clone https://github.com/naotochan/Newsy.git
 cd Newsy
 python -m venv .venv
 source .venv/bin/activate
-pip install -e .
+(.venv) pip install -e .
 ```
 
 ### 環境変数
@@ -51,7 +51,7 @@ cp config/.env.example config/.env
 
 ```bash
 # VOICEVOX と LM Studio を起動した状態で
-python main.py
+(.venv) python main.py
 ```
 
 `output/YYYYMMDD_HHMM/` に以下が生成されます：
