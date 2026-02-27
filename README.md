@@ -63,16 +63,6 @@ cp config/.env.example config/.env
 | `sources_partN.md` | パートごとの元記事メモ |
 | `README.md` | パート別概要 + 記事一覧 + タイムスタンプ |
 
-## RSS フィード（39 本）
-
-| カテゴリ | フィード数 | 例 |
-|----------|-----------|-----|
-| 国内メディア | 7 | ITmedia NEWS, WIRED.jp, GIZMODO JAPAN |
-| UI/UX・デザイン | 4 | UX Collective, Nielsen Norman Group |
-| 海外メディア | 6 | The Verge, Ars Technica, TechCrunch |
-| arXiv | 9 | cs.AI, cs.LG, cs.CL, cs.RO, cs.HC 他 |
-| AI 企業・技術ブログ | 11 | OpenAI, Google AI, Anthropic, Hacker News |
-
 既出記事は `output/seen_urls.txt` で管理し、自動的にスキップされます。
 
 ## 設定
@@ -93,3 +83,7 @@ cp config/.env.example config/.env
 - LM Studio / Anthropic API（脚本生成）
 - VOICEVOX / ElevenLabs（音声合成）
 - soundfile + numpy + ffmpeg（音声処理）
+
+## ライセンス
+
+[MIT License](LICENSE)
