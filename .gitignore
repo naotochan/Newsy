@@ -9,4 +9,3 @@ dist/
 .claude/
 tasks/
 logs/
-deploy.py
