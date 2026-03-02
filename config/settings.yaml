@@ -81,8 +81,8 @@ feeds:
 
 max_articles_per_feed: 3
 max_articles_total: 50
-max_articles_per_episode: 5   # 1エピソードあたりの記事数（≒5分）
-min_articles_per_episode: 3   # これ未満なら前のEPにまとめる
+max_articles_per_episode: 2   # 1エピソードあたりの記事数（深掘り重視）
+min_articles_per_episode: 1   # これ未満なら前のEPにまとめる
 
 llm:
   provider: "lmstudio"   # "anthropic" or "lmstudio"
