@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Newsy</title>
+<title>Newsy — 2026年03月03日 06:18</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -61,18 +61,22 @@
 </style>
 </head>
 <body>
-<h1>Newsy</h1>
-<a class="card-link" href="./20260303_0618/"><div class="card"><div class="card-date">2026年03月03日 06:18</div><div class="card-meta">1 記事</div></div></a>
-<a class="card-link" href="./20260303_0600/"><div class="card"><div class="card-date">2026年03月03日 06:00</div><div class="card-meta"></div></div></a>
-<a class="card-link" href="./20260303_0509/"><div class="card"><div class="card-date">2026年03月03日 05:09</div><div class="card-meta"></div></div></a>
-<a class="card-link" href="./20260302_1012/"><div class="card"><div class="card-date">2026年03月02日 10:12</div><div class="card-meta"></div></div></a>
-<a class="card-link" href="./20260302_0956/"><div class="card"><div class="card-date">2026年03月02日 09:56</div><div class="card-meta">7 記事</div></div></a>
-<a class="card-link" href="./20260302_0600/"><div class="card"><div class="card-date">2026年03月02日 06:00</div><div class="card-meta">18 記事</div></div></a>
-<a class="card-link" href="./20260301_0600/"><div class="card"><div class="card-date">2026年03月01日 06:00</div><div class="card-meta">33 記事</div></div></a>
-<a class="card-link" href="./20260228_0600/"><div class="card"><div class="card-date">2026年02月28日 06:00</div><div class="card-meta">50 記事</div></div></a>
-<a class="card-link" href="./20260227_0600/"><div class="card"><div class="card-date">2026年02月27日 06:00</div><div class="card-meta">38 記事</div></div></a>
-<a class="card-link" href="./20260226_2158/"><div class="card"><div class="card-date">2026年02月26日 21:58</div><div class="card-meta">50 記事</div></div></a>
-<a class="card-link" href="./20260226_0600/"><div class="card"><div class="card-date">2026年02月26日 06:00</div><div class="card-meta">41 記事</div></div></a>
-<a class="card-link" href="./20260225_2037/"><div class="card"><div class="card-date">2026年02月25日 20:37</div><div class="card-meta">50 記事</div></div></a>
+<a class="back" href="../">← 一覧に戻る</a>
+<h2>2026年03月03日 06:18</h2>
+<p class="page-meta">1 記事</p>
+<div class="ep"><audio id="player" controls preload="none" src="./newsy.mp3"></audio></div>
+<div class="ep" data-time="00:00"><div class="ep-title">パート1<span class="ep-time">00:00</span></div><div class="ep-summary">ブリティッシュコロンビア州が年間を通じて夏時間（デイライト・セービング・タイム）を廃止し、冬も同じ時刻を維持するという決定について掘り下げます。</div><details><summary>引用記事 (1)</summary><ul class="sources"><li><a href="https://www.cbc.ca/news/canada/british-columbia/b-c-adopting-year-round-daylight-time-9.7111657" target="_blank">British Columbia to end time changes, adopt year-round daylight time</a> <span class="src-site">Hacker News</span></li></ul></details></div>
+<script>
+document.querySelectorAll('.ep[data-time]').forEach(el => {
+  el.addEventListener('click', e => {
+    if (e.target.closest('details, a')) return;
+    const p = document.getElementById('player');
+    if (!p) return;
+    const [m, s] = el.dataset.time.split(':').map(Number);
+    p.currentTime = m * 60 + s;
+    p.play();
+  });
+});
+</script>
 </body>
 </html>
