@@ -308,8 +308,8 @@ def run(config_path: str = "config/settings.yaml", output_dir: str = "output") -
     # 新規取得 + ストックを合わせて候補にする（新規を優先表示）
     all_articles = (fresh_articles or []) + stock_articles
     if not all_articles:
-        print("  記事を取得できませんでした。終了します。")
-        return []
+        print("  新着記事がありませんでした。スキップします。")
+        return ["skip"]
     print(f"  候補記事 {len(all_articles)} 件（新規 {len(fresh_articles or [])} + ストック {len(stock_articles)}）")
 
     # 2. 記事選定（LLM で重要度判定）
