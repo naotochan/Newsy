@@ -6,7 +6,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from src.pipeline import run
+from src.pipeline import run, resume
 
 
 class Tee:
@@ -43,12 +43,16 @@ def main():
     )
     parser.add_argument("--config", default="config/settings.yaml", help="設定ファイルのパス")
     parser.add_argument("--output", default="output", help="出力ディレクトリ")
+    parser.add_argument("--resume", metavar="FOLDER", help="既存フォルダから音声生成を再開（例: 20260304_0600）")
     args = parser.parse_args()
 
     log_path = setup_logging()
     print(f"ログ: {log_path}\n")
 
-    results = run(config_path=args.config, output_dir=args.output)
+    if args.resume:
+        results = resume(args.resume, config_path=args.config, output_dir=args.output)
+    else:
+        results = run(config_path=args.config, output_dir=args.output)
 
     sys.exit(0 if results else 1)
 
