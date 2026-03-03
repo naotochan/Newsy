@@ -1,7 +1,6 @@
 """ニュース取得モジュール — RSS フィードから記事を収集し本文を抽出する"""
 
 import feedparser
-import trafilatura
 import yaml
 from dataclasses import dataclass
 from pathlib import Path
@@ -39,6 +38,7 @@ def fetch_rss(feed_url: str, source_name: str, max_items: int = 5) -> list[Artic
 
 def fetch_content(url: str, max_chars: int = 2000) -> Optional[str]:
     try:
+        import trafilatura
         downloaded = trafilatura.fetch_url(url)
         if downloaded:
             text = trafilatura.extract(downloaded)
